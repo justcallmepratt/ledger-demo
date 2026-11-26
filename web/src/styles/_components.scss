@@ -95,6 +95,17 @@
   }
 }
 
+// Routed page components are the only children of <main>: lay them out as a stack.
+.shell__main > * {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+app-hud-panel {
+  display: block;
+}
+
 .shell__footer {
   border-top: 1px solid var(--cp-border);
   padding: var(--space-5) var(--space-4);
