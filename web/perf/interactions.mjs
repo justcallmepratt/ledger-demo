@@ -101,7 +101,7 @@ async function launchChrome() {
   const close = () => {
     try { ws.close(); } catch {}
     proc.kill('SIGKILL');
-    rmSync(dir, { recursive: true, force: true });
+    try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch {} // Chrome may still be exiting
   };
   return { send, once, close };
 }
