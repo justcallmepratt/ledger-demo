@@ -255,7 +255,7 @@ jobs:
             echo "Row counts: $(cat perf-out/pg/row_counts.txt 2>/dev/null)"
             echo
             echo "k6 $(cat perf-out/k6-version.txt 2>/dev/null | head -1)"
-          } | tee perf-out/job-summary.md >> "$GITHUB_STEP_SUMMARY"
+          } | tee perf-out/job-summary.md | tee -a "$GITHUB_STEP_SUMMARY"
           # The log is the only place the numbers can be read back without downloading the artifact.
           for f in perf-out/pg/explain_analyze.txt perf-out/pg/table_health.txt perf-out/pg/index_usage.txt \
                    perf-out/pg/duplicate_indexes.txt perf-out/pg/pg_stat_checkpointer.txt perf-out/pg/pg_settings_dba.txt \
