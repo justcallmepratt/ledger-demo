@@ -74,6 +74,15 @@ public class TransferService {
             return new ItemResult(0, request.id(), TransferResult.LINKED_NOT_ALLOWED, null,
                     "linked is only allowed in POST /transfers/batch");
         }
+        // An id that is already stored is final (transfers are immutable), so a replay is answered
+        // from a plain read: no transaction, no account locks, nothing held while other writers queue.
+        // A miss falls through to the locked path, which re-checks and settles races on the primary key.
+        if (request.id() != null) {
+            Optional<Transfer> stored = transfers.findById(request.id());
+            if (stored.isPresent()) {
+                return compareWithStored(request, stored.get(), 0);
+            }
+        }
         return runChain(List.of(request), 0).get(0);
     }
 
@@ -127,9 +136,12 @@ public class TransferService {
         Map<UUID, Account> working = accounts.lockForUpdate(accountIdsToLock(chain));
 
         // A chain that was already committed in full is a pure replay: all items "exists".
-        List<ItemResult> replay = tryFullReplay(chain, offset);
-        if (replay != null) {
-            return replay;
+        // (A single transfer does its own existence check in executeOne; no need to read it twice.)
+        if (chain.size() > 1) {
+            List<ItemResult> replay = tryFullReplay(chain, offset);
+            if (replay != null) {
+                return replay;
+            }
         }
 
         List<ItemResult> done = new ArrayList<>();
