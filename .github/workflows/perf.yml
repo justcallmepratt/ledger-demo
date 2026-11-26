@@ -255,8 +255,18 @@ jobs:
             echo "Row counts: $(cat perf-out/pg/row_counts.txt 2>/dev/null)"
             echo
             echo "k6 $(cat perf-out/k6-version.txt 2>/dev/null | head -1)"
-          } >> "$GITHUB_STEP_SUMMARY"
-          cp perf-out/summary.md perf-out/summary-table.md 2>/dev/null || true
+          } | tee perf-out/job-summary.md >> "$GITHUB_STEP_SUMMARY"
+          # The log is the only place the numbers can be read back without downloading the artifact.
+          for f in perf-out/pg/explain_analyze.txt perf-out/pg/table_health.txt perf-out/pg/index_usage.txt \
+                   perf-out/pg/duplicate_indexes.txt perf-out/pg/pg_stat_checkpointer.txt perf-out/pg/pg_settings_dba.txt \
+                   perf-out/pg/pg_stat_statements_by_mean.csv perf-out/pg/pg_stat_database.txt perf-out/pg/pg_stat_wal.txt \
+                   perf-out/docker-stats.txt; do
+            echo "::group::$f"; cat "$f" 2>/dev/null; echo "::endgroup::"
+          done
+          for f in perf-out/jfr-hot-methods.txt perf-out/jfr-contention.txt perf-out/jfr-gc-pauses.txt perf-out/jfr-gc.txt; do
+            echo "::group::$f"; head -n 60 "$f" 2>/dev/null; echo "::endgroup::"
+          done
+          echo "::group::app.log (tail)"; tail -n 40 perf-out/app.log; echo "::endgroup::"
 
       - name: Upload results
         if: always()
