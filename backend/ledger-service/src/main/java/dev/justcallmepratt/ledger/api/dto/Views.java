@@ -3,6 +3,7 @@ package dev.justcallmepratt.ledger.api.dto;
 import dev.justcallmepratt.ledger.domain.Account;
 import dev.justcallmepratt.ledger.domain.Ledger;
 import dev.justcallmepratt.ledger.domain.Transfer;
+import dev.justcallmepratt.ledger.persistence.ActivityEntry;
 import dev.justcallmepratt.ledger.persistence.BalanceHistoryEntry;
 
 /** Domain to wire-format mapping. */
@@ -41,5 +42,11 @@ public final class Views {
 
     public static LedgerResponse ledger(Ledger l) {
         return new LedgerResponse(l.id(), l.currency(), l.assetScale());
+    }
+
+    public static ActivityItemResponse activity(ActivityEntry e) {
+        return new ActivityItemResponse(e.eventId(), e.type(), e.seq() == null ? null : Long.toString(e.seq()),
+                e.transferId(), e.accountId(), e.amount() == null ? null : Long.toString(e.amount()), e.ledger(),
+                e.occurredAt(), e.summary());
     }
 }
