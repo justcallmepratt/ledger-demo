@@ -1,0 +1,69 @@
+name: Web performance
+
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - '.github/workflows/web-perf.yml'
+
+concurrency:
+  group: web-perf-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  perf:
+    name: Lighthouse CI and interaction metrics
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: web
+    env:
+      CHROME_PATH: /usr/bin/google-chrome
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Production build: the Angular budgets in angular.json fail the build when exceeded.
+      - name: Build
+        run: pnpm build
+
+      # 5 runs x 4 URLs x desktop and mobile against perf/mock-server.mjs (deterministic data);
+      # assertions live in perf/thresholds.cjs.
+      - name: Lighthouse CI
+        run: node perf/run-lhci.mjs | tee lhci-summary.txt
+
+      # p95 route navigation, SSE-to-row and "Load more" times (reported, not asserted: they are
+      # too noisy on shared runners to gate on).
+      - name: Interaction metrics
+        if: always()
+        run: |
+          node perf/mock-server.mjs > /dev/null &
+          sleep 2
+          node perf/interactions.mjs --nav-cycles 15 --load-more-runs 3 --out interactions.json
+          kill %1
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-perf-reports
+          path: |
+            web/.lighthouseci/reports-*
+            web/lhci-summary.txt
+            web/interactions.json
+          retention-days: 14

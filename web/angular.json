@@ -46,8 +46,49 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "320kB",
+                  "maximumError": "360kB"
+                },
+                {
+                  "type": "allScript",
+                  "maximumWarning": "440kB",
+                  "maximumError": "500kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "dashboard",
+                  "maximumWarning": "21kB",
+                  "maximumError": "25kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "transfer-form",
+                  "maximumWarning": "15kB",
+                  "maximumError": "18kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "pending-transfers",
+                  "maximumWarning": "12kB",
+                  "maximumError": "15kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "account-detail",
+                  "maximumWarning": "12kB",
+                  "maximumError": "15kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "activity-page",
+                  "maximumWarning": "4kB",
+                  "maximumError": "6kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "not-found",
+                  "maximumWarning": "2kB",
+                  "maximumError": "4kB"
                 },
                 {
                   "type": "anyComponentStyle",
