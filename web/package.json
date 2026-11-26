@@ -9,7 +9,11 @@
     "test": "ng test --no-watch",
     "lint": "ng lint",
     "format": "prettier --write \"src/**/*.{ts,scss,html}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,scss,html}\""
+    "format:check": "prettier --check \"src/**/*.{ts,scss,html}\"",
+    "perf:server": "node perf/mock-server.mjs",
+    "perf:lhci": "node perf/run-lhci.mjs",
+    "perf:interactions": "node perf/interactions.mjs",
+    "perf:summary": "node perf/summarize-lhci.mjs"
   },
   "private": true,
   "packageManager": "pnpm@10.28.0",
@@ -32,6 +36,7 @@
     "@angular/cli": "22.3.0",
     "@angular/compiler-cli": "22.3.0",
     "@eslint/js": "10.0.1",
+    "@lhci/cli": "0.16.1",
     "@types/node": "^22.20.7",
     "angular-eslint": "22.8.0",
     "axe-core": "4.14.1",
