@@ -40,7 +40,7 @@ import { HudPanel } from '../../shared/hud-panel';
           </div>
         }
         @if (!feed.loaded()) {
-          <p class="state" role="status">Loading activity…</p>
+          <p class="state state--loading" role="status">Loading activity…</p>
         } @else if (feed.items().length === 0) {
           <p class="state">No activity yet. Events appear here the moment they happen.</p>
         }
