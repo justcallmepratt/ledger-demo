@@ -156,9 +156,11 @@ public class TransferService {
                 return failChain(chain, offset, k, item);
             }
         }
+        List<Account> changed = new ArrayList<>(touched.size());
         for (UUID id : touched) {
-            accounts.updateCounters(working.get(id));
+            changed.add(working.get(id));
         }
+        accounts.updateCounters(changed);
         return done;
     }
 

@@ -119,6 +119,37 @@ public class AccountRepository {
                 .update();
     }
 
+    /**
+     * Writes the counters of several accounts in one statement (one round trip instead of one per
+     * account). The caller holds the row locks; every account must exist.
+     */
+    public void updateCounters(Collection<Account> updated) {
+        if (updated.isEmpty()) {
+            return;
+        }
+        List<Object> params = new ArrayList<>(updated.size() * 5);
+        StringBuilder values = new StringBuilder();
+        for (Account a : updated) {
+            if (!params.isEmpty()) {
+                values.append(',');
+            }
+            values.append("(CAST(? AS uuid), CAST(? AS bigint), CAST(? AS bigint), CAST(? AS bigint), CAST(? AS bigint))");
+            params.add(a.id());
+            params.add(a.debitsPending());
+            params.add(a.debitsPosted());
+            params.add(a.creditsPending());
+            params.add(a.creditsPosted());
+        }
+        int rows = jdbc.sql("UPDATE accounts a SET debits_pending = v.dpend, debits_posted = v.dposted, "
+                        + "credits_pending = v.cpend, credits_posted = v.cposted "
+                        + "FROM (VALUES " + values + ") AS v(id, dpend, dposted, cpend, cposted) WHERE a.id = v.id")
+                .params(params)
+                .update();
+        if (rows != updated.size()) {
+            throw new IllegalStateException("expected to update " + updated.size() + " accounts, updated " + rows);
+        }
+    }
+
     /** Newest first by (created_at, id). Null cursor = first page. */
     public List<Account> page(Instant beforeCreatedAt, UUID beforeId, int limit) {
         if (beforeCreatedAt == null) {
