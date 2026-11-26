@@ -106,7 +106,7 @@ class TransferIdempotencyIntegrationTest extends IntegrationTestBase {
         Account a = newAccount();
         Account b = newAccount();
         ItemResult p = transferService.submit(pending(a, b, 300, 0));
-        Transfer post = post(p.transfer().id(), 0);
+        Transfer post = postPending(p.transfer().id(), 0);
 
         assertThat(transferService.submit(post).code()).isEqualTo(TransferResult.CREATED);
         assertThat(transferService.submit(post).code()).isEqualTo(TransferResult.EXISTS);

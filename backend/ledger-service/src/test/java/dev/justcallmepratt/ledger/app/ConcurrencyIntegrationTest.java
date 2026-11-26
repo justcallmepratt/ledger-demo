@@ -137,7 +137,7 @@ class ConcurrencyIntegrationTest extends IntegrationTestBase {
                 if (i % 3 == 0) {
                     transferService.submit(voidOf(p.transfer().id()));
                 } else {
-                    transferService.submit(post(p.transfer().id(), 4));
+                    transferService.submit(postPending(p.transfer().id(), 4));
                 }
             }
         });

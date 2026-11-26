@@ -83,7 +83,7 @@ public abstract class IntegrationTestBase {
                 null, timeoutSeconds, null);
     }
 
-    protected static Transfer post(UUID pendingId, long amount) {
+    protected static Transfer postPending(UUID pendingId, long amount) {
         return Transfer.request(UUID.randomUUID(), null, null, amount, 0, 0, TransferFlags.POST, pendingId, 0, null);
     }
 

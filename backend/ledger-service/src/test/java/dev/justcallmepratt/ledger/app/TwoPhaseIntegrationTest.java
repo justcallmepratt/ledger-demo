@@ -42,7 +42,7 @@ class TwoPhaseIntegrationTest extends IntegrationTestBase {
         assertThat(reload(b).creditsPending()).isEqualTo(300);
         assertThat(reload(a).debitsPosted()).isZero();
 
-        ItemResult post = transferService.submit(post(pending.transfer().id(), 0));
+        ItemResult post = transferService.submit(postPending(pending.transfer().id(), 0));
 
         assertThat(post.code()).isEqualTo(TransferResult.CREATED);
         assertThat(post.transfer().amount()).isEqualTo(300);
@@ -59,7 +59,7 @@ class TwoPhaseIntegrationTest extends IntegrationTestBase {
         Account b = newAccount();
         ItemResult pending = transferService.submit(pending(a, b, 300, 0));
 
-        ItemResult post = transferService.submit(post(pending.transfer().id(), 120));
+        ItemResult post = transferService.submit(postPending(pending.transfer().id(), 120));
 
         assertThat(post.code()).isEqualTo(TransferResult.CREATED);
         assertThat(reload(a).debitsPending()).isZero();
@@ -79,7 +79,7 @@ class TwoPhaseIntegrationTest extends IntegrationTestBase {
         assertThat(reload(a).debitsPending()).isZero();
         assertThat(reload(a).debitsPosted()).isZero();
         assertThat(transferService.get(pending.transfer().id()).pendingStatus()).isEqualTo(PendingStatus.VOIDED);
-        assertThat(transferService.submit(post(pending.transfer().id(), 0)).code())
+        assertThat(transferService.submit(postPending(pending.transfer().id(), 0)).code())
                 .isEqualTo(TransferResult.PENDING_TRANSFER_ALREADY_VOIDED);
         assertThat(transferService.submit(voidOf(pending.transfer().id())).code())
                 .isEqualTo(TransferResult.PENDING_TRANSFER_ALREADY_VOIDED);
@@ -91,8 +91,8 @@ class TwoPhaseIntegrationTest extends IntegrationTestBase {
         Account b = newAccount();
         ItemResult pending = transferService.submit(pending(a, b, 300, 0));
 
-        assertThat(transferService.submit(post(pending.transfer().id(), 0)).code()).isEqualTo(TransferResult.CREATED);
-        assertThat(transferService.submit(post(pending.transfer().id(), 0)).code())
+        assertThat(transferService.submit(postPending(pending.transfer().id(), 0)).code()).isEqualTo(TransferResult.CREATED);
+        assertThat(transferService.submit(postPending(pending.transfer().id(), 0)).code())
                 .isEqualTo(TransferResult.PENDING_TRANSFER_ALREADY_POSTED);
         assertThat(transferService.submit(voidOf(pending.transfer().id())).code())
                 .isEqualTo(TransferResult.PENDING_TRANSFER_ALREADY_POSTED);
@@ -105,7 +105,7 @@ class TwoPhaseIntegrationTest extends IntegrationTestBase {
         Account b = newAccount();
         ItemResult pending = transferService.submit(pending(a, b, 300, 0));
 
-        assertThat(transferService.submit(post(pending.transfer().id(), 301)).code())
+        assertThat(transferService.submit(postPending(pending.transfer().id(), 301)).code())
                 .isEqualTo(TransferResult.EXCEEDS_PENDING_TRANSFER_AMOUNT);
         assertThat(reload(a).debitsPending()).isEqualTo(300);
     }
@@ -118,7 +118,7 @@ class TwoPhaseIntegrationTest extends IntegrationTestBase {
 
         clock.advance(Duration.ofSeconds(31));
 
-        assertThat(transferService.submit(post(pending.transfer().id(), 0)).code())
+        assertThat(transferService.submit(postPending(pending.transfer().id(), 0)).code())
                 .isEqualTo(TransferResult.PENDING_TRANSFER_EXPIRED);
         assertThat(transferService.submit(voidOf(pending.transfer().id())).code())
                 .isEqualTo(TransferResult.PENDING_TRANSFER_EXPIRED);
@@ -130,7 +130,7 @@ class TwoPhaseIntegrationTest extends IntegrationTestBase {
         assertThat(reload(a).debitsPending()).isZero();
         assertThat(reload(b).creditsPending()).isZero();
         assertThat(transferService.get(pending.transfer().id()).pendingStatus()).isEqualTo(PendingStatus.EXPIRED);
-        assertThat(transferService.submit(post(pending.transfer().id(), 0)).code())
+        assertThat(transferService.submit(postPending(pending.transfer().id(), 0)).code())
                 .isEqualTo(TransferResult.PENDING_TRANSFER_EXPIRED);
         assertThat(expiryJob.expireDue()).isZero();
         assertThat(jdbc.sql("SELECT count(*) FROM outbox WHERE event_type = "
@@ -154,7 +154,7 @@ class TwoPhaseIntegrationTest extends IntegrationTestBase {
         Account a = newAccount();
         Account b = newAccount();
         ItemResult pending = transferService.submit(pending(a, b, 300, 30));
-        transferService.submit(post(pending.transfer().id(), 0));
+        transferService.submit(postPending(pending.transfer().id(), 0));
         clock.advance(Duration.ofSeconds(60));
 
         assertThat(transferService.expire(pending.transfer().id())).isFalse();
@@ -169,7 +169,7 @@ class TwoPhaseIntegrationTest extends IntegrationTestBase {
         ItemResult p1 = transferService.submit(pending(a, b, 1, 0));
         ItemResult p2 = transferService.submit(pending(a, b, 2, 0));
         ItemResult p3 = transferService.submit(pending(a, b, 3, 0));
-        transferService.submit(post(p2.transfer().id(), 0));
+        transferService.submit(postPending(p2.transfer().id(), 0));
         transferService.submit(voidOf(p3.transfer().id()));
 
         assertThat(transferService.list(PendingStatus.PENDING, 50, null).items()).extracting(Transfer::id)
@@ -189,7 +189,7 @@ class TwoPhaseIntegrationTest extends IntegrationTestBase {
 
         List<Callable<ItemResult>> tasks = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
-            tasks.add(() -> transferService.submit(post(pending.transfer().id(), 0)));
+            tasks.add(() -> transferService.submit(postPending(pending.transfer().id(), 0)));
         }
         ExecutorService pool = Executors.newFixedThreadPool(tasks.size());
         List<ItemResult> results = new ArrayList<>();

@@ -128,7 +128,7 @@ class LinkedChainIntegrationTest extends IntegrationTestBase {
         Account a = newAccount();
         Account b = newAccount();
         Transfer pending = linked(pending(a, b, 80, 0));
-        Transfer post = post(pending.id(), 50);
+        Transfer post = postPending(pending.id(), 50);
 
         List<ItemResult> results = transferService.submitBatch(List.of(pending, post));
 
@@ -157,7 +157,7 @@ class LinkedChainIntegrationTest extends IntegrationTestBase {
                 1, dev.justcallmepratt.ledger.domain.TransferFlags.NONE, null, 0, null);
 
         assertThat(transferService.submit(missing).code()).isEqualTo(TransferResult.DEBIT_ACCOUNT_NOT_FOUND);
-        assertThat(transferService.submit(post(java.util.UUID.randomUUID(), 0)).code())
+        assertThat(transferService.submit(postPending(java.util.UUID.randomUUID(), 0)).code())
                 .isEqualTo(TransferResult.PENDING_TRANSFER_NOT_FOUND);
         assertThat(count("transfers")).isZero();
         assertThat(reload(a).debitsPosted()).isZero();

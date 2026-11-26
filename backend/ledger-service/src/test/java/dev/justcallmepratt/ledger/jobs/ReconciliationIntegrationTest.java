@@ -50,7 +50,7 @@ class ReconciliationIntegrationTest extends IntegrationTestBase {
         ItemResult toVoid = transferService.submit(pending(b, a, 30, 0));
         ItemResult toExpire = transferService.submit(pending(a, b, 20, 10));
         ItemResult stays = transferService.submit(pending(b, a, 7, 0));
-        transferService.submit(post(toPost.transfer().id(), 40));
+        transferService.submit(postPending(toPost.transfer().id(), 40));
         transferService.submit(voidOf(toVoid.transfer().id()));
         clock.advance(Duration.ofSeconds(11));
         expiryJob.expireDue();
