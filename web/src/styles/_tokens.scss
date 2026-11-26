@@ -1,0 +1,56 @@
+// Design tokens, taken from the owner's personal site (Neo Militarism-inspired HUD).
+//
+// Contrast against #000 / panel #0A0A10 / HUD surface #111318 (WCAG 2.1 AA: text 4.5:1,
+// UI boundaries 3:1). The same pairs are asserted in src/styles/tokens.spec.ts.
+//   cp-red        #FF2E57  text-safe neon red   5.78 / 5.43 / 5.11
+//   cp-red-deep   #C5003C  FILLS, borders and glows only (3.44 on black as text: do not).
+//                          White text on this fill is 6.1:1.
+//   cp-border-strong #5F6688  field and control outlines  3.74 / 3.52 / 3.31
+//   cp-muted      #7A82A2  muted text                     5.54 / 5.21 / 4.90
+// Red is the primary identity colour here, not an error colour. Errors and warnings are
+// yellow and always carry a word ("Error", "Warning"), never colour alone.
+
+:root {
+  --cp-red: #ff2e57;
+  --cp-red-deep: #c5003c;
+  --cp-red-glow: #ff003c;
+  --cp-teal: #55ead4;
+  --cp-teal-dark: #136377;
+  --cp-yellow: #f3e600;
+  --cp-dark: #000000;
+  --cp-panel: #0a0a10;
+  --cp-surface: #111318;
+  --cp-border: #1e2235;
+  --cp-border-strong: #5f6688;
+  --cp-muted: #7a82a2;
+  --cp-text: #c8cdd8;
+  --cp-bright: #e8ecf8;
+  --cp-focus: #ffffff;
+
+  --font-ui: 'Rajdhani', system-ui, sans-serif;
+  --font-display: 'Orbitron', 'Rajdhani', system-ui, sans-serif;
+  --font-mono: 'Share Tech Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --tracking-body: 0.04em;
+  --tracking-label: 0.1em;
+  --tracking-display: 0.18em;
+
+  --chamfer: 16px;
+  --chamfer-sm: 8px;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --glow-red: 0 0 0 1px #c5003c, 0 0 16px rgba(197, 0, 60, 0.5);
+  --glow-teal: 0 0 0 1px #55ead4, 0 0 16px rgba(85, 234, 212, 0.4);
+  --glow-yellow: 0 0 0 1px #f3e600, 0 0 16px rgba(243, 230, 0, 0.4);
+
+  --z-header: 40;
+  --z-overlay: 50;
+  --z-dialog: 55;
+  --z-skip: 60;
+}
