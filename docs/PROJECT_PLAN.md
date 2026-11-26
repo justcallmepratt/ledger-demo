@@ -89,3 +89,8 @@ the dependency between backend and web.
 
 - 2026-11-26 — G1 passed: architecture, API contract and rules committed. Sprints 1 and 2
   started with two developer agents. CI, Dependabot and compose prepared.
+- 2026-11-26 — Sprints 1–2 delivered as PRs #2 (backend) and #3 (web) on top of #1
+  (CI and docs). First backend CI run compiled the whole service; two test-only fixes
+  (a helper name clash and a jsonb key-order assertion) took it to green: 64 domain and
+  175 service tests, coverage gates met. Web: 323 tests, lint and build green. Gate G2
+  waits on the product owner merging #1, then #2 and #3. Sprint 3 (hardening) is next.
