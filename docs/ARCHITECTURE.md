@@ -169,4 +169,4 @@ before any public deployment.
 5. **Amounts as decimal strings in JSON** so JavaScript clients never lose precision.
 6. **Embedded Postgres/Kafka in tests** so the full suite runs anywhere, including
    machines without Docker; no "skipped looks like passed" risk.
-7. **Spring Boot 4.1.x** (not 4.2) per the three-month rule for new lines.
+7. **Spring Boot 4.1.2** (not 4.2.0, released this month) per the three-month rule for new lines.

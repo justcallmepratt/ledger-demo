@@ -12,7 +12,7 @@ out of step.
 | Path | What | Stack |
 |------|------|-------|
 | `backend/ledger-domain/` | Pure domain model and rules. No Spring, no I/O | Java 21 |
-| `backend/ledger-service/` | The API, persistence, outbox, Kafka, jobs | Spring Boot 4.1.x, Maven |
+| `backend/ledger-service/` | The API, persistence, outbox, Kafka, jobs | Spring Boot 4.1.2, Maven |
 | `web/` | Dashboard | Angular (latest major at least 3 months old), pnpm |
 | `docs/` | Architecture, ADRs, API contract | Markdown |
 
