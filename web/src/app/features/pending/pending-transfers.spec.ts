@@ -309,7 +309,9 @@ describe('PendingTransfers', () => {
       await settle(fixture);
       const dialog = q(el, '[role="dialog"]');
       expect(dialog.textContent).toContain('already posted');
-      expect(q(dialog, '.result--error code.code').textContent).toBe('pending_transfer_already_posted');
+      expect(q(dialog, '.result--error code.code').textContent).toBe(
+        'pending_transfer_already_posted',
+      );
       expect(dialog.textContent).not.toContain('Safe to retry');
       ctrl
         .expectOne((r) => r.method === 'GET' && r.url === '/api/v1/transfers')

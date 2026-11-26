@@ -5,6 +5,9 @@ import axe from 'axe-core';
  * cannot run; contrast is asserted from the design tokens in styles/tokens.spec.ts instead.
  * The `region` rule is off because a lone component is not a whole page.
  */
+// axe probes <canvas> support; jsdom prints a noisy "not implemented" for it.
+HTMLCanvasElement.prototype.getContext = (() => null) as never;
+
 export async function expectNoA11yViolations(el: Element): Promise<void> {
   const results = await axe.run(el, {
     rules: { 'color-contrast': { enabled: false }, region: { enabled: false } },
