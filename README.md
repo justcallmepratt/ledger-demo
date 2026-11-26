@@ -32,6 +32,8 @@ flags), re-implemented on PostgreSQL with a transactional outbox to Kafka.
 | [`backend/`](backend/) | Maven multi-module: `ledger-domain` (pure rules) and `ledger-service` (Spring Boot API) |
 | [`web/`](web/) | Angular dashboard |
 | [`docs/BRD.md`](docs/BRD.md) | Business requirements: problem, objectives, scope, requirements, risks |
+| [`docs/MVP.md`](docs/MVP.md) | MVP definition: press release, FAQ, hypotheses, scope, exit criteria |
+| [`docs/BUSINESS_PLAN.md`](docs/BUSINESS_PLAN.md) | Hypothetical business plan: market, competitors, pricing, projections |
 | [`docs/TECH_STACK.md`](docs/TECH_STACK.md) | Stack choices, versions, libraries, standards, local setup |
 | [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) | Delivery plan: phases, gates, sprints |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Design, invariants and decision records |
