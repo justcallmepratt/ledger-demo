@@ -34,6 +34,8 @@
   the same PR with a reason).
 - Tests cover the change; coverage gates pass; no skipped tests.
 - `mvn -B verify` and `pnpm lint && pnpm test && pnpm build` pass in CI.
+- Performance: for changes on the transfer path, the `Perf` workflow (k6) ends with a balanced
+  reconciliation and no p95 regression against [PERFORMANCE.md](PERFORMANCE.md) beyond run-to-run noise.
 - No secrets, emails or phone numbers; dependencies pinned and on mature lines.
 - Reviewed by the architect against the contract before merge.
 

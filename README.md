@@ -38,6 +38,8 @@ flags), re-implemented on PostgreSQL with a transactional outbox to Kafka.
 | [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) | Delivery plan: phases, gates, sprints |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Design, invariants and decision records |
 | [`docs/API.md`](docs/API.md) | HTTP, SSE and Kafka event contract |
+| [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) | Load test (k6), p95 baseline, tuning results, DBA review, phase 2 SLOs |
+| [`perf/`](perf/) | k6 scenarios and run tooling; the `Perf` workflow runs them |
 
 ## Run it locally
 
