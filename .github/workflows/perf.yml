@@ -12,6 +12,12 @@ on:
       hold_s:
         description: Steady-state seconds per scenario (at least 180 for a reported run)
         default: '200'
+      base_ref:
+        description: >-
+          If set, run an interleaved A/B instead of the single run: the jar built from this ref
+          (commit or origin/branch) against the jar built from the dispatched ref, base-cand-cand-base,
+          all on this one runner so host noise hits both alike
+        default: ''
   push:
     branches: ['perf/**']
 
@@ -74,6 +80,7 @@ jobs:
 
   perf:
     name: k6 load test
+    if: github.event_name != 'workflow_dispatch' || inputs.base_ref == ''
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -286,3 +293,82 @@ jobs:
           grep -q 'PASS' perf-out/reconciliation-verdict.txt 2>/dev/null || { echo "::error::reconciliation did not pass"; fail=1; }
           if [ -f perf-out/summary.json ]; then python3 -I perf/scripts/report.py gate perf-out/summary.json || fail=1; else echo "::error::no summary.json"; fail=1; fi
           exit $fail
+
+  # Shared GitHub runners differ a lot from run to run (the same commit measured 400, 51 and 20 ms
+  # p95 on three runs), so a change is judged by alternating two jars on ONE runner.
+  ab:
+    name: A/B on one runner (base, cand, cand, base)
+    if: github.event_name == 'workflow_dispatch' && inputs.base_ref != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    services:
+      kafka:
+        image: apache/kafka:4.1.0
+        ports:
+          - 9092:9092
+        env:
+          KAFKA_NODE_ID: 1
+          KAFKA_PROCESS_ROLES: broker,controller
+          KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+          KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+        options: >-
+          --health-cmd "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 12
+          --health-start-period 20s
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v6
+        with:
+          java-version: '21'
+          distribution: corretto
+          cache: maven
+      - name: Build both jars
+        env:
+          BASE_REF: ${{ inputs.base_ref }}
+        run: |
+          (cd backend && mvn -B -ntp -DskipTests package) && cp backend/ledger-service/target/ledger-service-*.jar /tmp/cand.jar
+          git worktree add /tmp/base-src "$BASE_REF"
+          (cd /tmp/base-src/backend && mvn -B -ntp -DskipTests package) && cp /tmp/base-src/backend/ledger-service/target/ledger-service-*.jar /tmp/base.jar
+          echo "base: $(git -C /tmp/base-src rev-parse --short HEAD)  cand: $(git rev-parse --short HEAD)"
+          ls -l /tmp/base.jar /tmp/cand.jar
+      - uses: grafana/setup-k6-action@v1
+      - name: Run base, cand, cand, base
+        env:
+          RATE_SCALE: ${{ inputs.rate_scale || '1' }}
+          HOLD_S: ${{ inputs.hold_s || '200' }}
+        run: |
+          mkdir -p perf-out/ab
+          { echo "### Environment"; echo; echo "$(lscpu | awk -F: '/^Model name/ {gsub(/^ +/, "", $2); print $2}'), $(nproc) vCPU, $(free -m | awk '/^Mem:/ {print $2}') MiB RAM"; echo; echo "base \`${{ inputs.base_ref }}\` vs cand \`${GITHUB_SHA::7}\`"; } > perf-out/env.md
+          fail=0; i=0
+          for v in base cand cand base; do
+            i=$((i + 1))
+            echo "::group::run $i: $v"
+            perf/scripts/run-once.sh "/tmp/$v.jar" "perf-out/ab/$v-$i" || fail=1
+            cat "perf-out/ab/$v-$i/summary.md" 2>/dev/null
+            echo "::endgroup::"
+          done
+          { cat perf-out/env.md; echo; python3 -I perf/scripts/report.py ab perf-out/ab; } | tee perf-out/ab.md | tee -a "$GITHUB_STEP_SUMMARY"
+          for v in perf-out/ab/*; do
+            echo "::group::$v signals"; python3 -I perf/scripts/report.py samples "$v/samples.log"; python3 -I perf/scripts/report.py pgtop "$v/pg/pg_stat_statements_top.csv"; echo "::endgroup::"
+          done
+          exit $fail
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ab-${{ github.run_id }}-${{ github.run_attempt }}
+          path: perf-out/
+          retention-days: 30

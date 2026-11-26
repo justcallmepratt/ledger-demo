@@ -4,13 +4,16 @@
   report.py gate    summary.json              exit 1 unless the run is valid (reconciliation, errors, traffic)
   report.py compare base.json cand.json       Markdown before/after table with p95 deltas
   report.py noise   run1.json run2.json ...   run-to-run spread of p95 per scenario
+  report.py ab      dir                       A/B table from dir/base-N/summary.json and dir/cand-N/summary.json
   report.py samples samples.log               Markdown digest of the host / JVM / PostgreSQL sampler
   report.py pgtop   pg_stat_statements_top.csv  Markdown table of the top statements by total time
 
 Run with `python3 -I` (no user site / cwd imports). Standard library only.
 """
 import csv
+import glob
 import json
+import os
 import re
 import sys
 
@@ -71,6 +74,24 @@ def noise(paths):
         mean = sum(values) / len(values)
         spread = (max(values) - min(values)) / mean * 100 if mean else 0
         print(f"| {name} | {', '.join(str(v) for v in values)} | {mean:.2f} | {spread:.1f}% |")
+    return 0
+
+
+def ab(directory):
+    """Interleaved A/B on one runner: p95 / p99 per round for both variants and the mean change."""
+    def runs(prefix):
+        return [load(p) for p in sorted(glob.glob(os.path.join(directory, f"{prefix}-*", "summary.json")))]
+
+    base, cand = runs("base"), runs("cand")
+    for metric in ("p95", "p99"):
+        print(f"| Scenario | base {metric} ms (per round) | cand {metric} ms (per round) | base mean | cand mean | change |")
+        print("|---|---|---|---:|---:|---:|")
+        for name in SCENARIOS:
+            b = [r["scenarios"][name]["latencyMs"][metric] for r in base]
+            c = [r["scenarios"][name]["latencyMs"][metric] for r in cand]
+            bm, cm = sum(b) / len(b), sum(c) / len(c)
+            print(f"| {name} | {', '.join(map(str, b))} | {', '.join(map(str, c))} | {bm:.1f} | {cm:.1f} | {pct(bm, cm)} |")
+        print()
     return 0
 
 
@@ -145,6 +166,8 @@ def main(argv):
         return compare(args[0], args[1])
     if command == "noise":
         return noise(args)
+    if command == "ab":
+        return ab(args[0])
     if command == "samples":
         return samples(args[0])
     if command == "pgtop":
