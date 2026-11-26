@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Verify only: no deployment, no secrets, read-only token.
+permissions:
+  contents: read
+
+jobs:
+  # ── Backend ──────────────────────────────────────────────────────────────
+  backend:
+    name: Backend — Java 21 (Corretto) / Maven
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Skip cleanly until backend/pom.xml exists (e.g. a docs-only change before the code lands).
+      - name: Detect
+        id: detect
+        working-directory: .
+        run: if [ -f backend/pom.xml ]; then echo run=true >> "$GITHUB_OUTPUT"; else echo run=false >> "$GITHUB_OUTPUT"; echo "::notice::backend/pom.xml not present; nothing to verify"; fi
+
+      - name: Set up JDK 21 (Amazon Corretto)
+        if: steps.detect.outputs.run == 'true'
+        uses: actions/setup-java@v6
+        with:
+          java-version: '21'
+          distribution: corretto
+          cache: maven
+
+      # One run: unit, property, slice and integration tests (embedded PostgreSQL and
+      # embedded Kafka, so no Docker is needed), packaging, and the JaCoCo coverage gates.
+      - name: Verify
+        if: steps.detect.outputs.run == 'true'
+        run: mvn -B -ntp verify
+
+      # Integration tests must never be silently skipped: fail if none ran.
+      - name: Check integration tests ran
+        if: steps.detect.outputs.run == 'true'
+        run: |
+          count=$(cat ledger-service/target/surefire-reports/TEST-*IntegrationTest.xml 2>/dev/null \
+            | grep -o '<testsuite [^>]*' | grep -o ' tests="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s+0}')
+          echo "integration tests run: ${count:-0}"
+          test "${count:-0}" -gt 0 || { echo "::error::No integration tests ran"; exit 1; }
+          if grep -l 'skipped="[1-9]' ledger-service/target/surefire-reports/TEST-*.xml; then
+            echo "::error::Some tests were skipped"; exit 1
+          fi
+
+      - name: Upload test reports
+        if: failure() && steps.detect.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-reports
+          path: backend/**/target/surefire-reports/
+          retention-days: 7
+
+      - name: Upload JAR
+        if: steps.detect.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ledger-service-jar
+          path: backend/ledger-service/target/*.jar
+          retention-days: 7
+
+  # ── Web ──────────────────────────────────────────────────────────────────
+  web:
+    name: Web — Node 22 / pnpm
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Skip cleanly until web/package.json exists (e.g. a docs-only change before the code lands).
+      - name: Detect
+        id: detect
+        working-directory: .
+        run: if [ -f web/package.json ]; then echo run=true >> "$GITHUB_OUTPUT"; else echo run=false >> "$GITHUB_OUTPUT"; echo "::notice::web/package.json not present; nothing to verify"; fi
+
+      - uses: actions/setup-node@v7
+        if: steps.detect.outputs.run == 'true'
+        with:
+          node-version: '22'
+
+      - uses: pnpm/action-setup@v6
+        if: steps.detect.outputs.run == 'true'
+        with:
+          version: 10
+
+      - name: Get pnpm store path
+        if: steps.detect.outputs.run == 'true'
+        id: pnpm-store
+        run: echo "path=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        if: steps.detect.outputs.run == 'true'
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('web/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+
+      - name: Install
+        if: steps.detect.outputs.run == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        if: steps.detect.outputs.run == 'true'
+        run: pnpm lint
+
+      - name: Test
+        if: steps.detect.outputs.run == 'true'
+        run: pnpm test
+
+      - name: Build
+        if: steps.detect.outputs.run == 'true'
+        run: pnpm build
