@@ -38,6 +38,10 @@ dashboard 103 -> 86, account 83 -> 88; "Load more" 75 -> 85 (last page 116 -> 85
 burst of 1,000 at 500/s 79 -> 128 (identical code path, so this is noise); long tasks > 50 ms during
 the SSE runs: none at 20/s.
 
+CI check (GitHub runner, same build): scores 82/97/76/100 desktop and 91/95/71/93 mobile, CLS and
+transfer size match local runs, TBT is lower (0-150 ms). Thresholds are therefore kept as set from the
+local baseline; the runner meets them with room, except mobile `/activity` CLS (2.15 vs limit 2.5).
+
 ## Hypotheses
 
 1. **Kept: stop the page-wide layout shift.** The 0.97 shift was the footer, visible at the bottom of
