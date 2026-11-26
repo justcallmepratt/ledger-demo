@@ -21,4 +21,11 @@ public class LedgerRepository {
                         rs.getInt("asset_scale")))
                 .list();
     }
+
+    public boolean exists(int id) {
+        return jdbc.sql("SELECT count(*) FROM ledgers WHERE id = :id")
+                .param("id", id)
+                .query(Long.class)
+                .single() > 0;
+    }
 }
