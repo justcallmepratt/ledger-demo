@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Dumps PostgreSQL statistics after a run: top statements by total time (pg_stat_statements),
+# database, WAL and table counters. Usage: collect-pg.sh <output-dir>
+set -u
+dir="${1:?output dir}"
+pg="${PG_CONTAINER:-ledger-pg}"
+db_user="${LEDGER_DB_USER:-ledger}"
+mkdir -p "$dir"
+
+psqlq() { docker exec "$pg" psql -U "$db_user" -d "$1" "${@:2}"; }
+
+# pg_stat_statements lives in the `postgres` database (so Flyway sees an empty `ledger` schema);
+# its view covers every database, filtered here to `ledger`.
+psqlq postgres --csv -c "
+  select s.queryid, s.calls, round(s.total_exec_time::numeric, 1) as total_ms,
+         round(s.mean_exec_time::numeric, 3) as mean_ms, round(s.max_exec_time::numeric, 1) as max_ms,
+         s.rows, s.shared_blks_hit, s.shared_blks_read, s.wal_bytes,
+         left(regexp_replace(s.query, '\s+', ' ', 'g'), 240) as query
+  from pg_stat_statements s join pg_database d on d.oid = s.dbid
+  where d.datname = 'ledger' order by s.total_exec_time desc limit 30" > "$dir/pg_stat_statements_top.csv" 2>"$dir/pg_stat_statements_top.err"
+
+psqlq postgres -x -c "
+  select calls, round(total_exec_time::numeric, 1) as total_ms, round(mean_exec_time::numeric, 3) as mean_ms,
+         round(max_exec_time::numeric, 1) as max_ms, rows, query
+  from pg_stat_statements s join pg_database d on d.oid = s.dbid
+  where d.datname = 'ledger' order by total_exec_time desc limit 15" > "$dir/pg_stat_statements_top.txt" 2>&1
+
+psqlq ledger -x -c "select xact_commit, xact_rollback, blks_read, blks_hit, tup_inserted, tup_updated, tup_deleted, deadlocks, temp_files, blk_read_time, blk_write_time from pg_stat_database where datname = 'ledger'" > "$dir/pg_stat_database.txt" 2>&1
+psqlq ledger -x -c "select * from pg_stat_wal" > "$dir/pg_stat_wal.txt" 2>&1
+psqlq ledger -c "select relname, n_live_tup, n_dead_tup, seq_scan, seq_tup_read, idx_scan, n_tup_upd, n_tup_hot_upd from pg_stat_user_tables order by n_tup_upd + n_live_tup desc" > "$dir/pg_stat_user_tables.txt" 2>&1
+psqlq ledger -c "select relname, indexrelname, idx_scan, idx_tup_read from pg_stat_user_indexes order by idx_scan desc" > "$dir/pg_stat_user_indexes.txt" 2>&1
+psqlq ledger -At -c "select 'transfers=' || (select count(*) from transfers) || ' accounts=' || (select count(*) from accounts) || ' outbox_unpublished=' || (select count(*) from outbox where published_at is null) || ' outbox_total=' || (select count(*) from outbox) || ' history=' || (select count(*) from account_balance_history)" > "$dir/row_counts.txt" 2>&1
+psqlq postgres -At -c "show shared_buffers; show synchronous_commit; show fsync; show max_connections" > "$dir/pg_settings.txt" 2>&1
+exit 0
