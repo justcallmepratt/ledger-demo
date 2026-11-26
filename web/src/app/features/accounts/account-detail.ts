@@ -64,7 +64,7 @@ export function kindOf(t: Transfer): string {
     </div>
 
     @if (loading()) {
-      <p class="state" role="status">Loading account…</p>
+      <p class="state state--loading" role="status">Loading account…</p>
     } @else if (problem(); as p) {
       <div class="state state--error" role="alert">
         <p>

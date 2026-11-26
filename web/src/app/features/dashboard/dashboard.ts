@@ -172,7 +172,12 @@ interface AccountRow {
           ></span>
           <span>{{ statusLabel() }}</span>
         </p>
-        <ul class="feed" aria-live="polite" aria-relevant="additions" aria-label="Latest activity">
+        <ul
+          class="feed feed--ticker"
+          aria-live="polite"
+          aria-relevant="additions"
+          aria-label="Latest activity"
+        >
           @for (item of ticker(); track item.eventId) {
             <li class="feed__item">
               <span class="chip chip--muted">{{ item.type }}</span>
@@ -201,7 +206,7 @@ interface AccountRow {
         </p>
         @switch (accounts.status()) {
           @case ('loading') {
-            <p class="state" role="status">Loading accounts…</p>
+            <p class="state state--loading" role="status">Loading accounts…</p>
           }
           @case ('error') {
             <div class="state state--error" role="alert">

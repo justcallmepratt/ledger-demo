@@ -83,6 +83,9 @@
 
 .shell__main {
   flex: 1;
+  // The footer starts below the fold: with an empty <main> (route chunk still loading) it would
+  // otherwise sit in the viewport and be pushed off-screen when the page mounts.
+  min-height: 100vh;
   width: 100%;
   max-width: 80rem;
   margin: 0 auto;
@@ -522,6 +525,12 @@ select.cp-input {
   color: var(--cp-muted);
   text-align: center;
 
+  // Data pages reserve roughly a screen while loading, so the footer is never visible at the
+  // bottom of the viewport only to be pushed away when the data arrives (a page-wide layout shift).
+  &--loading {
+    min-height: 100vh;
+  }
+
   &--error {
     border-style: solid;
     border-color: var(--cp-yellow);
@@ -636,6 +645,12 @@ select.cp-input {
   margin: 0;
   padding: 0;
   list-style: none;
+
+  // The dashboard ticker always shows six rows: reserve them so the accounts panel below does not
+  // jump down when the first events arrive.
+  &--ticker {
+    min-height: 25.5rem;
+  }
 
   &__item {
     display: grid;
