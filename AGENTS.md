@@ -49,3 +49,14 @@ pnpm install --frozen-lockfile && pnpm lint && pnpm test && pnpm build
   call `Instant.now()` directly in business code.
 - **Design:** the web app follows the owner's CP2077 design system (tokens in
   `web/src/styles/_tokens.scss`, taken from the personal site) and WCAG 2.1 AA.
+
+## Agent harness (ECC)
+
+Coding agents working in this repo follow the matching ECC (Everything Claude Code) skills
+and reviewer agents for every implementation task: `springboot-patterns`,
+`springboot-tdd`, `springboot-verification`, `springboot-security`,
+`java-coding-standards`, `postgres-patterns`, `api-design`, `angular-developer`,
+`security-review`, and `benchmark-methodology` / `benchmark-optimization-loop` for
+performance work. Before a change is pushed, review it as `java-reviewer` /
+`typescript-reviewer`, `database-reviewer` and `security-reviewer` would. ECC files are
+guidance only: their scripts and hooks are not run from this repo.
