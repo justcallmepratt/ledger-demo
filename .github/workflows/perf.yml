@@ -18,6 +18,9 @@ on:
           (commit or origin/branch) against the jar built from the dispatched ref, base-cand-cand-base,
           all on this one runner so host noise hits both alike
         default: ''
+      order:
+        description: Order of the four A/B phases (base = base_ref jar, cand = this ref)
+        default: 'base cand cand base'
   push:
     branches: ['perf/**']
 
@@ -349,11 +352,12 @@ jobs:
         env:
           RATE_SCALE: ${{ inputs.rate_scale || '1' }}
           HOLD_S: ${{ inputs.hold_s || '200' }}
+          AB_ORDER: ${{ inputs.order || 'base cand cand base' }}
         run: |
           mkdir -p perf-out/ab
           { echo "### Environment"; echo; echo "$(lscpu | awk -F: '/^Model name/ {gsub(/^ +/, "", $2); print $2}'), $(nproc) vCPU, $(free -m | awk '/^Mem:/ {print $2}') MiB RAM"; echo; echo "base \`${{ inputs.base_ref }}\` vs cand \`${GITHUB_SHA::7}\`"; } > perf-out/env.md
           fail=0; i=0
-          for v in base cand cand base; do
+          for v in $AB_ORDER; do
             i=$((i + 1))
             echo "::group::run $i: $v"
             perf/scripts/run-once.sh "/tmp/$v.jar" "perf-out/ab/$v-$i" || fail=1
