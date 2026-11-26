@@ -1,0 +1,4 @@
+# Local development: seeds demo accounts and transfers (idempotent) via DevDataSeeder.
+logging:
+  level:
+    dev.justcallmepratt.ledger: DEBUG

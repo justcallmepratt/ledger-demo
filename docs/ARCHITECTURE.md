@@ -55,8 +55,8 @@ transactions; linked single-leg transfers cover the same cases with simpler inva
 `dev.justcallmepratt.ledger`
 
 - `ledger-domain`: `domain` (Account, AccountFlags, Transfer, TransferFlags, Ledger,
-  AmountMinor, TransferResult codes), `rules` (TransferValidator, BalanceRules,
-  PendingRules). Pure functions over immutable records. Applying a transfer to two
+  AmountMinor, TransferResult codes), `rules` (TransferEngine: validation order, balance
+  limits, two-phase and expiry rules, idempotent-replay comparison; BalanceRules). Pure functions over immutable records. Applying a transfer to two
   account snapshots returns new snapshots or a `TransferRejected(code)`. No exceptions for
   business outcomes.
 - `ledger-service`: `api` (controllers, DTOs, problem handler), `app` (TransferService,
@@ -94,9 +94,13 @@ Notation: for an account, `dp, dP, cp, cP` = debits pending/posted, credits pend
 6. **Linked chains.** In a batch, a run of transfers with `linked` set, ending with the
    first one without it, is atomic. One failure fails the chain: the failing item gets its
    own code, the others `linked_event_failed`. A batch that ends inside an open chain
-   fails that chain with `linked_event_chain_open`. Separate chains are independent.
-7. **Immutability.** No `UPDATE`/`DELETE` on `transfers` (enforced by a trigger that
-   raises). Corrections are new transfers.
+   fails that chain with `linked_event_chain_open`. Separate chains are independent. An item whose id already exists counts as a failure
+   inside a chain, except that replaying a chain that was committed in full returns
+   `exists` for every item and changes nothing.
+7. **Immutability.** No `UPDATE`/`DELETE`/`TRUNCATE` on `transfers` (enforced by a trigger
+   that raises). Corrections are new transfers. The lifecycle of a pending transfer
+   (PENDING → POSTED/VOIDED/EXPIRED) lives in a separate `pending_transfers` table, so the
+   trigger has no exceptions.
 8. **Ordering.** Every committed transfer gets a gap-tolerant, strictly increasing
    `seq` (bigserial) and a server `timestamp`. Events carry `seq`.
 
@@ -133,8 +137,8 @@ end to end and is the template for later projects (fraud scoring reads the same 
 ## Persistence
 
 PostgreSQL 17, Flyway migrations in `ledger-service/src/main/resources/db/migration`.
-Tables: `ledgers`, `accounts`, `transfers`, `account_balance_history`, `outbox`,
-`activity`. Integer money as `BIGINT` with `CHECK (amount >= 0)`. Seed: ledger 840 USD
+Tables: `ledgers`, `accounts`, `transfers`, `pending_transfers`,
+`account_balance_history`, `outbox`, `activity`. Integer money as `BIGINT` with `CHECK (amount >= 0)`. Seed: ledger 840 USD
 (asset scale 2) and a demo `dev` profile that creates a few demo accounts.
 
 ## Security (phase 1 scope)

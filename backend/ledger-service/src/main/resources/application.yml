@@ -1,0 +1,80 @@
+# All environment-specific values come from environment variables. No secrets live in the repo.
+spring:
+  application:
+    name: ledger-service
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${LEDGER_DB_URL}
+    username: ${LEDGER_DB_USER}
+    password: ${LEDGER_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${LEDGER_DB_POOL_SIZE:20}
+      minimum-idle: 2
+      connection-timeout: 5000
+      # fail fast instead of piling up behind a stuck query or lock
+      connection-init-sql: SET statement_timeout = '30s'; SET lock_timeout = '15s'
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+  kafka:
+    bootstrap-servers: ${LEDGER_KAFKA_BOOTSTRAP:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        max.block.ms: 5000
+        delivery.timeout.ms: 30000
+        request.timeout.ms: 10000
+    consumer:
+      group-id: ledger-activity-projector
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+  max-http-request-header-size: 16KB
+  tomcat:
+    max-swallow-size: 256KB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+ledger:
+  web-origin: ${LEDGER_WEB_ORIGIN:http://localhost:4200}
+  kafka:
+    enabled: true
+    partitions: 3
+    replicas: 1
+  outbox:
+    batch-size: 100
+    poll-interval-ms: 200
+  expiry:
+    interval-ms: 5000
+  reconciliation:
+    interval-ms: 300000
+  activity:
+    keep: 1000
