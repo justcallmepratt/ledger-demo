@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.TestPropertySource;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -101,13 +102,20 @@ class OutboxKafkaProjectorIntegrationTest extends IntegrationTestBase {
         assertThat(found).as("record for the transfer").isNotNull();
         assertThat(new String(found.headers().lastHeader("content-type").value(), StandardCharsets.UTF_8))
                 .isEqualTo("application/cloudevents+json");
-        assertThat(found.value()).contains("\"specversion\":\"1.0\"")
-                .contains("\"type\":\"dev.justcallmepratt.ledger.transfer.created.v1\"")
-                .contains("\"source\":\"/ledger-core\"")
-                .contains("\"subject\":\"" + t.id() + "\"")
-                .contains("\"amount\":\"77\"")
-                .contains("\"debitAccount\"")
-                .contains("\"creditAccount\"");
+        // The outbox stores the payload as jsonb, so key order and spacing are not fixed:
+        // assert on the parsed CloudEvent, not on the raw string.
+        @SuppressWarnings("unchecked")
+        Map<String, Object> event = JsonMapper.builder().build().readValue(found.value(), Map.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) event.get("data");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> transfer = (Map<String, Object>) data.get("transfer");
+        assertThat(event).containsEntry("specversion", "1.0")
+                .containsEntry("type", "dev.justcallmepratt.ledger.transfer.created.v1")
+                .containsEntry("source", "/ledger-core")
+                .containsEntry("subject", t.id().toString());
+        assertThat(transfer).containsEntry("amount", "77");
+        assertThat(data).containsKeys("debitAccount", "creditAccount");
     }
 
     @Test
